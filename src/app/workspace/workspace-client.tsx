@@ -2,14 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  ArrowLeft,
-  Send,
-  Sparkles,
-  BookMarked,
-  X,
-  ListTree,
-} from "lucide-react";
+import { ArrowLeft, Send, Sparkles, BookMarked, X, ListTree } from "lucide-react";
 import Link from "next/link";
 import { ThemeProvider } from "@/components/theme";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -20,71 +13,86 @@ type Thread = { id: string; title: string; messages: Message[] };
 const SEED: Thread[] = [
   {
     id: "t1",
-    title: "Phép biện chứng duy vật là gì?",
+    title: "Bản chất của thực tại",
     messages: [
       {
         id: "t1-q",
         role: "user",
-        content:
-          "Hãy giải thích nhẹ nhàng cho mình về phép biện chứng duy vật.",
+        content: "Thực tại có tồn tại độc lập với nhận thức của con người không?",
       },
       {
         id: "t1-a",
         role: "ai",
         content:
-          "Hãy tưởng tượng thế giới như một dòng sông luôn chảy ✨ — phép biện chứng duy vật là cách nhìn mọi sự vật trong sự vận động, biến đổi và liên hệ với nhau. Ba quy luật cốt lõi: lượng-chất, mâu thuẫn, phủ định của phủ định.",
+          "Đây là câu hỏi trung tâm của nhận thức luận. Chủ nghĩa duy vật cho rằng thực tại tồn tại khách quan, độc lập với ý thức; trong khi chủ nghĩa duy tâm lại nhấn mạnh vai trò của nhận thức trong việc cấu thành thế giới.",
       },
     ],
   },
   {
     id: "t2",
-    title: "Mâu thuẫn & sự phát triển",
+    title: "Tự do và tất yếu",
     messages: [
       {
         id: "t2-q",
         role: "user",
-        content: "Mâu thuẫn nội tại có vai trò gì trong sự phát triển?",
+        content: "Con người có thực sự tự do hay mọi thứ đều bị quyết định bởi hoàn cảnh?",
       },
       {
         id: "t2-a",
         role: "ai",
         content:
-          "Mâu thuẫn là nguồn gốc, động lực của mọi sự phát triển. Khi hai mặt đối lập đấu tranh và thống nhất, sự vật chuyển hoá sang trạng thái mới — như hạt mầm tự phá vỏ để nảy lên ☘️",
+          "Triết học nhìn nhận tự do không phải là không có ràng buộc, mà là nhận thức được cái tất yếu và hành động phù hợp với nó. Tự do nằm trong sự hiểu biết và làm chủ điều kiện của mình.",
       },
     ],
   },
   {
     id: "t3",
-    title: "Vật chất quyết định ý thức?",
+    title: "Ý thức và vật chất",
     messages: [
       {
         id: "t3-q",
         role: "user",
-        content: "Mình hơi mơ hồ về việc vật chất quyết định ý thức.",
+        content: "Ý thức là sản phẩm của bộ não hay có tồn tại độc lập?",
       },
       {
         id: "t3-a",
         role: "ai",
         content:
-          "Vật chất là cái có trước, ý thức là cái có sau và phản ánh vật chất. Nhưng ý thức cũng tác động trở lại vật chất thông qua hoạt động thực tiễn của con người 🌿",
+          "Theo quan điểm duy vật, ý thức là sản phẩm của bộ não và phản ánh thế giới vật chất. Tuy nhiên, nhiều trường phái khác vẫn tranh luận về khả năng tồn tại độc lập của ý thức.",
       },
     ],
   },
   {
     id: "t4",
-    title: "Lượng đổi → chất đổi",
+    title: "Ý nghĩa cuộc sống",
     messages: [
       {
         id: "t4-q",
         role: "user",
-        content:
-          "Quy luật lượng – chất hoạt động thế nào trong đời sống?",
+        content: "Cuộc sống có ý nghĩa sẵn hay con người phải tự tạo ra ý nghĩa?",
       },
       {
         id: "t4-a",
         role: "ai",
         content:
-          "Mỗi ngày bạn đọc thêm một trang sách — đó là tích luỹ về lượng. Đến một ngưỡng nhất định (điểm nút), tư duy của bạn bước sang một chất mới: bạn nhìn thế giới khác đi ✨",
+          "Chủ nghĩa hiện sinh cho rằng cuộc sống không có ý nghĩa sẵn — chính con người thông qua lựa chọn và hành động của mình tạo ra ý nghĩa cho tồn tại của mình.",
+      },
+    ],
+  },
+  {
+    id: "t5",
+    title: "Nhận thức chân lý",
+    messages: [
+      {
+        id: "t5-q",
+        role: "user",
+        content: "Làm sao để biết một điều gì đó là chân lý?",
+      },
+      {
+        id: "t5-a",
+        role: "ai",
+        content:
+          "Trong triết học, chân lý thường được kiểm chứng qua thực tiễn. Một nhận thức được coi là chân lý khi nó phản ánh đúng hiện thực và được kiểm nghiệm qua hành động thực tế.",
       },
     ],
   },
@@ -110,13 +118,10 @@ function Workspace() {
   const sectionRefs = useRef<Map<string, HTMLElement>>(new Map());
   const userScrollLockRef = useRef(false);
 
-  const registerSection = useCallback(
-    (id: string, el: HTMLElement | null) => {
-      if (!el) sectionRefs.current.delete(id);
-      else sectionRefs.current.set(id, el);
-    },
-    []
-  );
+  const registerSection = useCallback((id: string, el: HTMLElement | null) => {
+    if (!el) sectionRefs.current.delete(id);
+    else sectionRefs.current.set(id, el);
+  }, []);
 
   /* Initial overlay — fades out only after every history section has
      mounted into the DOM, so the user lands on a fully ready stream. */
@@ -158,7 +163,7 @@ function Workspace() {
         // trigger when section's top crosses ~30% from the top of stream
         rootMargin: "-20% 0px -55% 0px",
         threshold: [0, 0.25, 0.5, 0.75, 1],
-      }
+      },
     );
 
     sectionRefs.current.forEach((el) => observer.observe(el));
@@ -192,14 +197,9 @@ function Workspace() {
     // scroll to new question
     requestAnimationFrame(() => {
       userScrollLockRef.current = true;
-      sectionRefs.current
-        .get(id)
-        ?.scrollIntoView({ behavior: "smooth", block: "start" });
+      sectionRefs.current.get(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
       setActiveId(id);
-      window.setTimeout(
-        () => (userScrollLockRef.current = false),
-        700
-      );
+      window.setTimeout(() => (userScrollLockRef.current = false), 700);
     });
     setTimeout(() => {
       setThreads((ts) =>
@@ -217,8 +217,8 @@ function Workspace() {
                   },
                 ],
               }
-            : t
-        )
+            : t,
+        ),
       );
       setIsThinking(false);
     }, 1700);
@@ -226,7 +226,7 @@ function Workspace() {
 
   const totalMessages = useMemo(
     () => threads.reduce((n, t) => n + t.messages.length, 0),
-    [threads]
+    [threads],
   );
 
   return (
@@ -282,10 +282,7 @@ function Workspace() {
             </div>
           </header>
 
-          <div
-            ref={streamRef}
-            className="flex-1 min-h-0 overflow-y-auto stream-smooth"
-          >
+          <div ref={streamRef} className="flex-1 min-h-0 overflow-y-auto stream-smooth">
             <div className="px-4 md:px-12 py-10 max-w-3xl mx-auto w-full space-y-14">
               {threads.map((t, idx) => (
                 <ThreadSection
@@ -309,9 +306,7 @@ function Workspace() {
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={(e) =>
-                    e.key === "Enter" &&
-                    !e.shiftKey &&
-                    (e.preventDefault(), send())
+                    e.key === "Enter" && !e.shiftKey && (e.preventDefault(), send())
                   }
                   placeholder="Hỏi Athena một câu mới — sẽ được nối vào cuối dòng thời gian..."
                   className="flex-1 bg-transparent text-[15px] py-3 placeholder:text-muted-foreground focus:outline-none"
@@ -325,8 +320,7 @@ function Workspace() {
                 </button>
               </div>
               <div className="text-[11px] text-muted-foreground text-center mt-2 font-hand text-sm">
-                ✨ một dòng cuộn duy nhất — câu hỏi mới luôn nằm ở dưới
-                cùng
+                ✨ một dòng cuộn duy nhất — câu hỏi mới luôn nằm ở dưới cùng
               </div>
             </div>
           </div>
@@ -394,9 +388,7 @@ function TocSidebar({
             <BookMarked className="w-4 h-4 text-primary" />
           </div>
           <div className="leading-tight">
-            <div className="font-display text-lg font-semibold">
-              Mục lục
-            </div>
+            <div className="font-display text-lg font-semibold">Mục lục</div>
             <div className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground -mt-0.5">
               {threads.length} câu hỏi
             </div>
@@ -415,15 +407,12 @@ function TocSidebar({
                 <button
                   onClick={() => onJump(t.id)}
                   className={`group w-full text-left rounded-2xl pl-9 pr-3 py-2.5 transition-all ${
-                    isActive
-                      ? "bg-primary/8"
-                      : "hover:bg-white/60 opacity-75 hover:opacity-100"
+                    isActive ? "bg-primary/8" : "hover:bg-white/60 opacity-75 hover:opacity-100"
                   }`}
                   style={
                     isActive
                       ? {
-                          backgroundColor:
-                            "color-mix(in oklab, var(--primary) 10%, transparent)",
+                          backgroundColor: "color-mix(in oklab, var(--primary) 10%, transparent)",
                         }
                       : undefined
                   }
@@ -439,18 +428,14 @@ function TocSidebar({
                   <div className="flex items-baseline gap-2">
                     <span
                       className={`text-[10px] font-display tabular-nums ${
-                        isActive
-                          ? "text-primary"
-                          : "text-muted-foreground"
+                        isActive ? "text-primary" : "text-muted-foreground"
                       }`}
                     >
                       {String(i + 1).padStart(2, "0")}
                     </span>
                     <span
                       className={`text-sm leading-snug ${
-                        isActive
-                          ? "text-foreground font-medium"
-                          : "text-foreground/80"
+                        isActive ? "text-foreground font-medium" : "text-foreground/80"
                       }`}
                     >
                       {t.title}
@@ -563,8 +548,7 @@ function ProcessingAnswer() {
       <div
         className="processing-shimmer relative overflow-hidden rounded-[28px] rounded-bl-md px-5 py-3.5 shadow-card border-2"
         style={{
-          borderColor:
-            "color-mix(in oklab, var(--primary) 40%, transparent)",
+          borderColor: "color-mix(in oklab, var(--primary) 40%, transparent)",
         }}
       >
         <div className="relative flex items-center gap-3">
@@ -618,8 +602,7 @@ function BootOverlay({ show }: { show: boolean }) {
                 className="absolute inset-0 rounded-full border-2 border-transparent"
                 style={{
                   borderTopColor: "var(--primary)",
-                  borderRightColor:
-                    "color-mix(in oklab, var(--primary) 40%, transparent)",
+                  borderRightColor: "color-mix(in oklab, var(--primary) 40%, transparent)",
                 }}
                 animate={{ rotate: 360 }}
                 transition={{
@@ -632,8 +615,7 @@ function BootOverlay({ show }: { show: boolean }) {
                 className="absolute inset-2 rounded-full border-2 border-transparent"
                 style={{
                   borderBottomColor: "var(--accent)",
-                  borderLeftColor:
-                    "color-mix(in oklab, var(--accent) 40%, transparent)",
+                  borderLeftColor: "color-mix(in oklab, var(--accent) 40%, transparent)",
                 }}
                 animate={{ rotate: -360 }}
                 transition={{
