@@ -216,7 +216,6 @@ function Workspace() {
                   },
                 ],
               }
-            : t
         )
       );
       setIsThinking(false);
