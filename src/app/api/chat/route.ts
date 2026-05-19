@@ -11,7 +11,8 @@ import { NextRequest, NextResponse } from "next/server";
 // Đọc URL webhook n8n từ biến môi trường Vercel
 // (Cần add N8N_WEBHOOK_URL vào Vercel → Settings → Environment Variables)
 const N8N_WEBHOOK_URL = process.env.N8N_WEBHOOK_URL!;
-console.log(N8N_WEBHOOK_URL);
+// console.log("N8N_WEBHOOK_URL", N8N_WEBHOOK_URL);
+
 // Kiểm tra ngay nếu thiếu biến môi trường sẽ báo lỗi rõ ràng trên log
 if (!N8N_WEBHOOK_URL) {
     throw new Error("Missing N8N_WEBHOOK_URL in environment variables");
