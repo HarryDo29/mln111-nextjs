@@ -17,78 +17,31 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 type Message = { id: string; role: "user" | "ai"; content: string };
 type Thread = { id: string; title: string; messages: Message[] };
 
-const SEED: Thread[] = [
-  {
-    id: "t1",
-    title: "Phép biện chứng duy vật là gì?",
-    messages: [
-      {
-        id: "t1-q",
-        role: "user",
-        content:
-          "Hãy giải thích nhẹ nhàng cho mình về phép biện chứng duy vật.",
-      },
-      {
-        id: "t1-a",
-        role: "ai",
-        content:
-          "Hãy tưởng tượng thế giới như một dòng sông luôn chảy ✨ — phép biện chứng duy vật là cách nhìn mọi sự vật trong sự vận động, biến đổi và liên hệ với nhau. Ba quy luật cốt lõi: lượng-chất, mâu thuẫn, phủ định của phủ định.",
-      },
-    ],
-  },
-  {
-    id: "t2",
-    title: "Mâu thuẫn & sự phát triển",
-    messages: [
-      {
-        id: "t2-q",
-        role: "user",
-        content: "Mâu thuẫn nội tại có vai trò gì trong sự phát triển?",
-      },
-      {
-        id: "t2-a",
-        role: "ai",
-        content:
-          "Mâu thuẫn là nguồn gốc, động lực của mọi sự phát triển. Khi hai mặt đối lập đấu tranh và thống nhất, sự vật chuyển hoá sang trạng thái mới — như hạt mầm tự phá vỏ để nảy lên ☘️",
-      },
-    ],
-  },
-  {
-    id: "t3",
-    title: "Vật chất quyết định ý thức?",
-    messages: [
-      {
-        id: "t3-q",
-        role: "user",
-        content: "Mình hơi mơ hồ về việc vật chất quyết định ý thức.",
-      },
-      {
-        id: "t3-a",
-        role: "ai",
-        content:
-          "Vật chất là cái có trước, ý thức là cái có sau và phản ánh vật chất. Nhưng ý thức cũng tác động trở lại vật chất thông qua hoạt động thực tiễn của con người 🌿",
-      },
-    ],
-  },
-  {
-    id: "t4",
-    title: "Lượng đổi → chất đổi",
-    messages: [
-      {
-        id: "t4-q",
-        role: "user",
-        content:
-          "Quy luật lượng – chất hoạt động thế nào trong đời sống?",
-      },
-      {
-        id: "t4-a",
-        role: "ai",
-        content:
-          "Mỗi ngày bạn đọc thêm một trang sách — đó là tích luỹ về lượng. Đến một ngưỡng nhất định (điểm nút), tư duy của bạn bước sang một chất mới: bạn nhìn thế giới khác đi ✨",
-      },
-    ],
-  },
-];
+// Key lưu lịch sử chat trong localStorage
+const STORAGE_KEY = "athena_chat_history";
+
+/** Đọc lịch sử chat từ localStorage (trả về [] nếu chưa có) */
+function loadThreads(): Thread[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+/** Ghi lịch sử chat vào localStorage */
+function saveThreads(threads: Thread[]) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(threads));
+  } catch {
+    // localStorage đầy hoặc bị disabled → bỏ qua
+    console.warn("Không thể lưu lịch sử chat vào localStorage");
+  }
+}
 
 export function WorkspaceClient() {
   return (
@@ -99,8 +52,28 @@ export function WorkspaceClient() {
 }
 
 function Workspace() {
-  const [threads, setThreads] = useState<Thread[]>(SEED);
-  const [activeId, setActiveId] = useState<string>(SEED[0].id);
+  // Khởi tạo threads từ localStorage (lazy init để tránh SSR mismatch)
+  const [threads, setThreads] = useState<Thread[]>([]);
+  const [activeId, setActiveId] = useState<string>("");
+  const isInitialized = useRef(false);
+
+  // Load dữ liệu từ localStorage khi component mount (client-side only)
+  useEffect(() => {
+    if (isInitialized.current) return;
+    isInitialized.current = true;
+    const saved = loadThreads();
+    if (saved.length > 0) {
+      setThreads(saved);
+      setActiveId(saved[0].id);
+    }
+    // Nếu chưa có data → threads = [] → hiển thị trạng thái rỗng
+  }, []);
+
+  // Sync threads vào localStorage mỗi khi thay đổi
+  useEffect(() => {
+    if (!isInitialized.current) return;
+    saveThreads(threads);
+  }, [threads]);
   const [input, setInput] = useState("");
   const [isThinking, setIsThinking] = useState(false);
   const [tocOpen, setTocOpen] = useState(false);
@@ -110,6 +83,9 @@ function Workspace() {
   const sectionRefs = useRef<Map<string, HTMLElement>>(new Map());
   const userScrollLockRef = useRef(false);
 
+  // sessionId cố định cho mỗi tab — giúp AI nhớ ngữ cảnh hội thoại
+  const sessionId = useRef(`session-${Date.now()}`);
+
   const registerSection = useCallback(
     (id: string, el: HTMLElement | null) => {
       if (!el) sectionRefs.current.delete(id);
@@ -118,15 +94,19 @@ function Workspace() {
     []
   );
 
-  /* Initial overlay — fades out only after every history section has
-     mounted into the DOM, so the user lands on a fully ready stream. */
+  /* Initial overlay — fades out after data is loaded from localStorage
+     and sections have mounted into the DOM (or immediately if no history). */
   useEffect(() => {
     if (!booting) return;
     let raf = 0;
     const start = performance.now();
     const check = () => {
-      const ready = SEED.every((t) => sectionRefs.current.has(t.id));
       const elapsed = performance.now() - start;
+      // Chờ tối thiểu 700ms + đảm bảo đã init xong
+      const ready =
+        isInitialized.current &&
+        (threads.length === 0 ||
+          threads.every((t) => sectionRefs.current.has(t.id)));
       if (ready && elapsed > 700) {
         setBooting(false);
         return;
@@ -135,7 +115,7 @@ function Workspace() {
     };
     raf = requestAnimationFrame(check);
     return () => cancelAnimationFrame(raf);
-  }, [booting]);
+  }, [booting, threads]);
 
   /* Intersection Observer: highlight TOC item as user scrolls */
   useEffect(() => {
@@ -177,57 +157,94 @@ function Workspace() {
     }, 700);
   }
 
-  function send() {
+  // ============================================================
+  // HÀM SEND — Gửi tin nhắn tới n8n, nhận câu trả lời AI thật
+  // (Đây là phần thay đổi chính so với bản cũ dùng setTimeout fake)
+  // ============================================================
+  async function send() {
     const text = input.trim();
     if (!text || isThinking) return;
+
     const id = `t-${Date.now()}`;
     const newThread: Thread = {
       id,
       title: text.length > 60 ? text.slice(0, 58) + "…" : text,
       messages: [{ id: `${id}-q`, role: "user", content: text }],
     };
+
+    // Hiển thị câu hỏi của user lên UI ngay lập tức
     setThreads((ts) => [...ts, newThread]);
     setInput("");
-    setIsThinking(true);
-    // scroll to new question
+    setIsThinking(true); // Hiện animation "đang suy nghĩ..."
+
+    // Cuộn xuống câu hỏi mới
     requestAnimationFrame(() => {
       userScrollLockRef.current = true;
       sectionRefs.current
         .get(id)
         ?.scrollIntoView({ behavior: "smooth", block: "start" });
       setActiveId(id);
-      window.setTimeout(
-        () => (userScrollLockRef.current = false),
-        700
-      );
+      window.setTimeout(() => (userScrollLockRef.current = false), 700);
     });
-    setTimeout(() => {
+
+    // Gọi API /api/chat → route.ts → n8n webhook → AI trả lời
+    try {
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: text,
+          sessionId: sessionId.current, // Giúp AI nhớ ngữ cảnh
+        }),
+      });
+
+      const data = await res.json();
+
+      // Hiển thị câu trả lời AI lên UI
       setThreads((ts) =>
         ts.map((t) =>
-          t.id === id
-            ? {
-                ...t,
-                messages: [
-                  ...t.messages,
-                  {
-                    id: `${id}-a`,
-                    role: "ai",
-                    content:
-                      "Câu hỏi rất hay ✨ Mình sẽ chia nhỏ vấn đề: trước hết hãy nhìn vào bản chất khái niệm, sau đó liên hệ với một ví dụ thực tiễn gần gũi với bạn — như cách một thói quen nhỏ cũng có thể tạo nên thay đổi về chất.",
-                  },
-                ],
-              }
-            : t
+          t.id !== id
+            ? t
+            : {
+              ...t,
+              messages: [
+                ...t.messages,
+                {
+                  id: `${id}-a`,
+                  role: "ai" as const,
+                  content:
+                    data.reply ||
+                    "Athena chưa tìm được câu trả lời, thử hỏi lại nhé 🌿",
+                },
+              ],
+            }
         )
       );
-      setIsThinking(false);
-    }, 1700);
+    } catch {
+      // Nếu lỗi kết nối → hiện thông báo thân thiện
+      setThreads((ts) =>
+        ts.map((t) =>
+          t.id !== id
+            ? t
+            : {
+              ...t,
+              messages: [
+                ...t.messages,
+                {
+                  id: `${id}-a`,
+                  role: "ai" as const,
+                  content: "Athena đang nghỉ ngơi một chút, thử lại sau nhé 🙏",
+                },
+              ],
+            }
+        )
+      );
+    } finally {
+      setIsThinking(false); // Tắt animation "đang suy nghĩ..."
+    }
   }
 
-  const totalMessages = useMemo(
-    () => threads.reduce((n, t) => n + t.messages.length, 0),
-    [threads]
-  );
+  const totalThreads = threads.length;
 
   return (
     <>
@@ -278,7 +295,7 @@ function Workspace() {
             </div>
             <div className="hidden md:flex items-center gap-2 text-xs text-muted-foreground shrink-0">
               <Sparkles className="w-3.5 h-3.5 text-primary" />
-              {totalMessages} đoạn hội thoại
+              {totalThreads} cuộc hội thoại
             </div>
           </header>
 
@@ -287,6 +304,26 @@ function Workspace() {
             className="flex-1 min-h-0 overflow-y-auto stream-smooth"
           >
             <div className="px-4 md:px-12 py-10 max-w-3xl mx-auto w-full space-y-14">
+              {threads.length === 0 && !isThinking && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.6, delay: 0.2 }}
+                  className="flex flex-col items-center justify-center text-center py-20 gap-5"
+                >
+                  <div className="w-16 h-16 rounded-full bg-gradient-marble border border-white/60 shadow-card flex items-center justify-center">
+                    <Sparkles className="w-7 h-7 text-primary" />
+                  </div>
+                  <div className="space-y-2">
+                    <h2 className="font-display text-xl text-foreground/90">
+                      Chào mừng bạn đến phòng học!
+                    </h2>
+                    <p className="text-sm text-muted-foreground max-w-md font-hand text-base">
+                      Hãy hỏi Athena bất kỳ câu hỏi nào — lịch sử hội thoại sẽ được lưu lại tự động ✨
+                    </p>
+                  </div>
+                </motion.div>
+              )}
               {threads.map((t, idx) => (
                 <ThreadSection
                   key={t.id}
@@ -414,44 +451,40 @@ function TocSidebar({
               <li key={t.id} className="relative">
                 <button
                   onClick={() => onJump(t.id)}
-                  className={`group w-full text-left rounded-2xl pl-9 pr-3 py-2.5 transition-all ${
-                    isActive
-                      ? "bg-primary/8"
-                      : "hover:bg-white/60 opacity-75 hover:opacity-100"
-                  }`}
+                  className={`group w-full text-left rounded-2xl pl-9 pr-3 py-2.5 transition-all ${isActive
+                    ? "bg-primary/8"
+                    : "hover:bg-white/60 opacity-75 hover:opacity-100"
+                    }`}
                   style={
                     isActive
                       ? {
-                          backgroundColor:
-                            "color-mix(in oklab, var(--primary) 10%, transparent)",
-                        }
+                        backgroundColor:
+                          "color-mix(in oklab, var(--primary) 10%, transparent)",
+                      }
                       : undefined
                   }
                 >
                   {/* node dot */}
                   <span
-                    className={`absolute left-[1.05rem] top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full border-2 transition-all ${
-                      isActive
-                        ? "bg-primary border-primary scale-125"
-                        : "bg-background border-border group-hover:border-primary/60"
-                    }`}
+                    className={`absolute left-[1.05rem] top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full border-2 transition-all ${isActive
+                      ? "bg-primary border-primary scale-125"
+                      : "bg-background border-border group-hover:border-primary/60"
+                      }`}
                   />
                   <div className="flex items-baseline gap-2">
                     <span
-                      className={`text-[10px] font-display tabular-nums ${
-                        isActive
-                          ? "text-primary"
-                          : "text-muted-foreground"
-                      }`}
+                      className={`text-[10px] font-display tabular-nums ${isActive
+                        ? "text-primary"
+                        : "text-muted-foreground"
+                        }`}
                     >
                       {String(i + 1).padStart(2, "0")}
                     </span>
                     <span
-                      className={`text-sm leading-snug ${
-                        isActive
-                          ? "text-foreground font-medium"
-                          : "text-foreground/80"
-                      }`}
+                      className={`text-sm leading-snug ${isActive
+                        ? "text-foreground font-medium"
+                        : "text-foreground/80"
+                        }`}
                     >
                       {t.title}
                     </span>
@@ -493,9 +526,8 @@ function ThreadSection({
       {/* Section header / anchor label */}
       <div className="flex items-center gap-3">
         <div
-          className={`text-[10px] tracking-[0.3em] uppercase font-display transition-colors ${
-            isActive ? "text-primary" : "text-muted-foreground"
-          }`}
+          className={`text-[10px] tracking-[0.3em] uppercase font-display transition-colors ${isActive ? "text-primary" : "text-muted-foreground"
+            }`}
         >
           §{String(index + 1).padStart(2, "0")}
         </div>
@@ -534,11 +566,10 @@ function ChatBubble({ message }: { message: Message }) {
         </div>
       )}
       <div
-        className={`max-w-[78%] px-5 py-3.5 text-[15px] leading-relaxed shadow-card ${
-          isUser
-            ? "bg-card text-card-foreground rounded-[28px] rounded-br-md border-2"
-            : "bg-card border border-white/70 text-card-foreground rounded-[28px] rounded-bl-md"
-        }`}
+        className={`max-w-[78%] px-5 py-3.5 text-[15px] leading-relaxed shadow-card ${isUser
+          ? "bg-card text-card-foreground rounded-[28px] rounded-br-md border-2"
+          : "bg-card border border-white/70 text-card-foreground rounded-[28px] rounded-bl-md"
+          }`}
         style={isUser ? { borderColor: "var(--primary)" } : undefined}
       >
         {message.content}
