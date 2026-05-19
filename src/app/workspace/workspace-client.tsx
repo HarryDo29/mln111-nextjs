@@ -51,6 +51,9 @@ export function WorkspaceClient() {
   );
 }
 
+/* ------------------------------------------------------------------ */
+/*  Workspace — owns all state & scroll logic                          */
+/* ------------------------------------------------------------------ */
 function Workspace() {
   // Khởi tạo threads từ localStorage (lazy init để tránh SSR mismatch)
   const [threads, setThreads] = useState<Thread[]>([]);
@@ -135,10 +138,9 @@ function Workspace() {
       },
       {
         root,
-        // trigger when section's top crosses ~30% from the top of stream
         rootMargin: "-20% 0px -55% 0px",
         threshold: [0, 0.25, 0.5, 0.75, 1],
-      }
+      },
     );
 
     sectionRefs.current.forEach((el) => observer.observe(el));
@@ -152,9 +154,7 @@ function Workspace() {
     if (!el) return;
     userScrollLockRef.current = true;
     el.scrollIntoView({ behavior: "smooth", block: "start" });
-    window.setTimeout(() => {
-      userScrollLockRef.current = false;
-    }, 700);
+    window.setTimeout(() => (userScrollLockRef.current = false), 700);
   }
 
   // ============================================================
@@ -164,6 +164,7 @@ function Workspace() {
   async function send() {
     const text = input.trim();
     if (!text || isThinking) return;
+
 
     const id = `t-${Date.now()}`;
     const newThread: Thread = {
@@ -180,9 +181,7 @@ function Workspace() {
     // Cuộn xuống câu hỏi mới
     requestAnimationFrame(() => {
       userScrollLockRef.current = true;
-      sectionRefs.current
-        .get(id)
-        ?.scrollIntoView({ behavior: "smooth", block: "start" });
+      sectionRefs.current.get(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
       setActiveId(id);
       window.setTimeout(() => (userScrollLockRef.current = false), 700);
     });
@@ -249,14 +248,12 @@ function Workspace() {
   return (
     <>
       <BootOverlay show={booting} />
+
       <div
         className="min-h-screen w-full md:h-screen md:overflow-hidden relative"
-        style={{
-          display: "grid",
-          gridTemplateColumns: "[toc] auto [stream] 1fr",
-        }}
+        style={{ display: "grid", gridTemplateColumns: "[toc] auto [stream] 1fr" }}
       >
-        {/* TOC sidebar — desktop in grid; mobile slides in */}
+        {/* TOC sidebar */}
         <TocSidebar
           threads={threads}
           activeId={activeId}
@@ -284,6 +281,7 @@ function Workspace() {
           style={{ gridColumn: "stream" }}
           className="flex flex-col min-w-0 md:h-screen relative"
         >
+          {/* Stream header */}
           <header className="px-5 md:px-10 py-4 md:py-5 border-b border-border/50 bg-background/60 backdrop-blur-xl flex items-center justify-between gap-3 sticky top-0 z-10">
             <div className="min-w-0 flex-1">
               <div className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground">
