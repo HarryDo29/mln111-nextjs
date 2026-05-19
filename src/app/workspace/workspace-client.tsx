@@ -288,7 +288,7 @@ function Workspace() {
                 Athena · dòng thời gian học tập
               </div>
               <h1 className="font-display text-xl md:text-3xl mt-0.5 truncate">
-                Phòng học của Linh
+                Phòng học Triết MLN111
               </h1>
             </div>
             <div className="hidden md:flex items-center gap-2 text-xs text-muted-foreground shrink-0">
