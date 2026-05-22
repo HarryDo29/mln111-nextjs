@@ -4,18 +4,18 @@ import { motion } from "framer-motion";
 
 const stories = [
   {
-    name: "Minh Anh", role: "K22 · KHXH&NV",
-    quote: "Lần đầu mình thấy học triết... đẹp như đi xem triển lãm. Athena theme là chân ái.",
+    name: "Triết Học Mác - Lênin",
+    quote: "Từ trực quan sinh động đến tư duy trừu tượng, từ tư duy trừu tượng đến thực tiễn - đó là con đường biện chứng của sự nhận thức chân lý, của sự nhận thức hiện thực khách quan.",
     color: "var(--lavender)", rotate: -1.5,
   },
   {
-    name: "Quang Huy", role: "K23 · Bách Khoa",
-    quote: "Mindmap cẩm thạch của triết.ai cứu mình mùa thi. Mình nhớ bài qua màu sắc và bố cục.",
+    name: "Triết Học Mác - Lênin",
+    quote: "Dứt khoát là không có và không thể có bất kỳ sự khác nhau nào về nguyên tắc giữa hiện tượng và vật tự nó. Chỉ có sự khác nhau giữa cái đã được nhận thức và cái chưa được nhận thức.",
     color: "var(--cream)", rotate: 1,
   },
   {
-    name: "Thảo Vy", role: "K22 · Kinh Tế",
-    quote: "Pomodoro + nhạc nguyện đường + AI giảng giải = không gian học mơ ước của mình.",
+    name: "Triết Học Mác - Lênin",
+    quote: "Thực tiễn mà chúng ta dùng làm tiêu chuẩn trong lý luận về nhận thức, phải bao gồm cả thực tiền của những sự quan sát, những sự phát hiện về thiên văn học",
     color: "var(--rose)", rotate: -1,
   },
 ];
@@ -32,8 +32,7 @@ export function Testimonials() {
         >
           <div className="text-[11px] uppercase tracking-[0.3em] text-muted-foreground mb-4">— Voices · Anno MMXXVI</div>
           <h2 className="font-display text-5xl md:text-6xl font-medium leading-[1.05] text-balance">
-            Hơn 2.000 sinh viên<br />
-            đã <em className="font-italic-display text-primary">yêu</em> triết học.
+            Trích dẫn của Lenin
           </h2>
         </motion.div>
 
@@ -55,7 +54,6 @@ export function Testimonials() {
               </p>
               <div className="mt-8 pt-5 border-t border-foreground/15">
                 <div className="font-medium text-sm">{s.name}</div>
-                <div className="text-[11px] uppercase tracking-[0.2em] text-foreground/60 mt-1">{s.role}</div>
               </div>
             </motion.div>
           ))}

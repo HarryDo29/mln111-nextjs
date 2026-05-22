@@ -42,9 +42,9 @@ export function Hero() {
             transition={{ duration: 0.8, delay: 0.1 }}
             className="font-display text-[48px] md:text-[78px] leading-[0.95] font-medium text-balance"
           >
-            Một <em className="font-italic-display text-primary">thánh đường</em><br />
-            cho triết học<br />
-            của thế hệ mới.
+            <em className="font-italic-display text-primary">Triết học</em> cho thế<br />
+            hệ đang tìm cách<br />
+            hiểu thế giới.
           </motion.h1>
 
           <motion.p
@@ -128,7 +128,7 @@ export function Hero() {
               <div className="flex items-end justify-between">
                 <div>
                   <div className="text-[10px] uppercase tracking-[0.3em] text-foreground/60">Marble Study · 2026</div>
-                  <div className="font-display italic text-2xl mt-1">&quot;Γνῶθι σεαυτόν&quot;</div>
+                  <div className="font-display italic text-2xl mt-1">&quot;Philosophy of Marxism - Leninism&quot;</div>
                 </div>
               </div>
             </div>
@@ -157,7 +157,7 @@ export function Hero() {
             style={{ background: "var(--cream)" }}
           >
             <p className="font-hand text-lg leading-tight text-foreground/80">
-              hôm nay học về<br /><span className="text-primary">vật chất &amp; ý thức</span> ♡
+              hôm nay học về<br /><span className="text-primary">lý luận nhận thức &amp; </span> ♡
             </p>
             <div className="mt-2 text-[10px] uppercase tracking-[0.2em] text-foreground/50">— sổ tay của Linh</div>
           </motion.div>
